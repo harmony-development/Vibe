@@ -16,6 +16,8 @@ Vibe does not handle HTTPS or load balancing. It must be put behind a reverse pr
 
 ## Components
 
+TODO: codegen service interfaces from protocol spec
+
 ### Requests Handler
 
 This component handles unary hRPC requests and talks to the database, optionally adding to the message queue if the action creates a resource.
