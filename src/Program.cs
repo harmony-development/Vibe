@@ -10,6 +10,7 @@ using Autofac.Extensions.DependencyInjection;
 using Serilog;
 
 using Vibe;
+using Vibe.Components;
 using Vibe.Util.AspNet;
 
 IHostBuilder builder = Host.CreateDefaultBuilder();
@@ -20,6 +21,10 @@ builder.UseSerilog();
 builder.ConfigureContainer<ContainerBuilder>(builder =>
 {
     builder.RegisterType<VibeConfig>();
+
+    builder.RegisterType<RequestsHandler>().AsSelf();
+    builder.RegisterType<StreamHandler>().AsSelf();
+    builder.RegisterType<RestHandler>().AsSelf();
 
     builder.RegisterType<VibeRouter>().AsSelf().SingleInstance();
 
@@ -43,7 +48,7 @@ builder.ConfigureWebHost(wh =>
 
     wh.Configure(appb =>
     {
-        appb.UseCors(opts => opts.AllowAnyMethod().AllowAnyOrigin().WithHeaders("Content-Type", "Authorization"));
+        appb.UseCors(opts => opts.AllowAnyMethod().AllowAnyOrigin().WithHeaders("Content-Type", "Authorization", "hrpc-version"));
         appb.UseWebSockets(new() { KeepAliveInterval = TimeSpan.FromSeconds(120) });
 
         var router = appb.ApplicationServices.GetRequiredService<VibeRouter>();

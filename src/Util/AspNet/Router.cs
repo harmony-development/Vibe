@@ -1,18 +1,30 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 
+using Vibe.Components;
+
 namespace Vibe.Util.AspNet;
 
-public class VibeRouter
+public partial class VibeRouter
 {
-    private Dictionary<string, (bool, Action<Task>)> _streamRoutes = new();
-    private Dictionary<string, (bool, Action<Task>)> _requestRoutes = new();
+    private readonly RequestsHandler _requests;
+    private readonly StreamHandler _streams;
+    private readonly RestHandler _rest;
 
     private readonly VibeConfig _config;
 
-    public VibeRouter(VibeConfig config)
+    public VibeRouter(VibeConfig config,    
+        RequestsHandler requests, StreamHandler streams, RestHandler rest)
     {
         _config = config;
+
+        _requests = requests;
+        _streams = streams;
+        _rest = rest;
+
+        // todo: there must be a better way of doing this...
+        initRequestRoutes();
+        initStreamRoutes();
     }
 
     public void Initialize(IApplicationBuilder app)
@@ -23,17 +35,17 @@ public class VibeRouter
         {
             routes.MapPost(
                 "/_harmony/media/upload",
-                context => context.Unimplemented()
+                context => _rest.UploadFile(context)
             );
 
             routes.MapGet(
                 "/_harmony/media/download/{file_id}",
-                context => context.Unimplemented()
+                context => _rest.DownloadFile(context)
             );
 
             routes.MapGet(
                 "/_harmony/about",
-                context => context.Unimplemented()
+                context => _rest.AboutServer(context)
             );
         }
 
@@ -59,7 +71,7 @@ public class VibeRouter
                 if (needsAuth && !ctx.Request.Headers.ContainsKey("Authorization"))
                     return ctx.Unauthorized();
 
-                return Task.CompletedTask;
+                return action(ctx);
             }
         );
 
@@ -75,7 +87,8 @@ public class VibeRouter
                 if (needsAuth && !ctx.Request.Headers.ContainsKey("Authorization"))
                     return ctx.Unauthorized();
 
-                return Task.CompletedTask;
+                // todo: should we try-catch here?
+                return action(ctx);
             }
         );
 
